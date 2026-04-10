@@ -1,13 +1,25 @@
 import React from 'react';
-import { ScrollView, Button, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import InputWithLabel from '../components/InputWithLabel.js';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Platform, Button } from 'react-native';
 import { Formik } from 'formik';
+import * as Yup from 'yup';
+import InputWithLabel from '../components/InputWithLabel.js';
 
-const formatarData = (val) => val;
+// 1. Esquema de Validação: Define o que é obrigatório
+const cadastroSchema = Yup.object().shape({
+  email: Yup.string().email('E-mail inválido').required('O e-mail é obrigatório'),
+  senha: Yup.string().min(6, 'A senha deve ter 6+ caracteres').required('Senha obrigatória'),
+  confirmarSenha: Yup.string()
+    .oneOf([Yup.ref('senha'), null], 'As senhas não conferem')
+    .required('Confirme sua senha'),
+  nomePet: Yup.string().required('Nome do pet é obrigatório'),
+  dataNascimento: Yup.string().required('Data é obrigatória'),
+  raca: Yup.string().required('Raça é obrigatória'),
+  brinquedo: Yup.string().required('Brinquedo favorito é obrigatório'),
+});
 
 export default function CadastroScreen({ navigation }) {
   return (
-    <View style={styles.container}>
+    <View style={styles.mainContainer}>
       <Formik
         initialValues={{
           email: '',
@@ -18,32 +30,25 @@ export default function CadastroScreen({ navigation }) {
           raca: '',
           brinquedo: ''
         }}
+        validationSchema={cadastroSchema}
         onSubmit={(values) => {
-          console.log(values);
+          // Só executa se passar em todas as validações acima
+          console.log('Cadastro realizado:', values);
           navigation.navigate('Main');
         }}
       >
-        {({
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          values,
-          errors,
-          touched,
-          setFieldValue
-        }) => (
-          <ScrollView
-            style={styles.scroll}
+        {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+          <ScrollView 
+            style={{ flex: 1 }}
             contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={true}
             keyboardShouldPersistTaps="handled"
           >
-
             <View style={styles.card}>
+              
 
               <InputWithLabel
                 label="E-mail"
-                placeholder="Digite seu e-mail"
+                placeholder="exemplo@email.com"
                 value={values.email}
                 onChangeText={handleChange('email')}
                 onBlur={handleBlur('email')}
@@ -52,27 +57,27 @@ export default function CadastroScreen({ navigation }) {
 
               <InputWithLabel
                 label="Senha"
-                placeholder="Digite sua senha"
+                placeholder="Mínimo 6 caracteres"
+                secureTextEntry
                 value={values.senha}
                 onChangeText={handleChange('senha')}
                 onBlur={handleBlur('senha')}
-                secureTextEntry
                 error={touched.senha && errors.senha}
               />
 
               <InputWithLabel
                 label="Confirmar Senha"
-                placeholder="Confirme sua senha"
+                placeholder="Repita a senha"
+                secureTextEntry
                 value={values.confirmarSenha}
                 onChangeText={handleChange('confirmarSenha')}
                 onBlur={handleBlur('confirmarSenha')}
-                secureTextEntry
                 error={touched.confirmarSenha && errors.confirmarSenha}
               />
 
               <InputWithLabel
                 label="Nome do Pet"
-                placeholder="Nome do seu pet"
+                placeholder="Nome do seu bichinho"
                 value={values.nomePet}
                 onChangeText={handleChange('nomePet')}
                 onBlur={handleBlur('nomePet')}
@@ -81,18 +86,16 @@ export default function CadastroScreen({ navigation }) {
 
               <InputWithLabel
                 label="Data de Nascimento"
-                placeholder="Ex: 01/01/2020"
+                placeholder="DD/MM/AAAA"
                 value={values.dataNascimento}
-                onChangeText={(text) =>
-                  setFieldValue('dataNascimento', formatarData(text))
-                }
+                onChangeText={handleChange('dataNascimento')}
                 onBlur={handleBlur('dataNascimento')}
                 error={touched.dataNascimento && errors.dataNascimento}
               />
 
               <InputWithLabel
                 label="Raça"
-                placeholder="Raça do pet"
+                placeholder="Qual a raça?"
                 value={values.raca}
                 onChangeText={handleChange('raca')}
                 onBlur={handleBlur('raca')}
@@ -101,28 +104,26 @@ export default function CadastroScreen({ navigation }) {
 
               <InputWithLabel
                 label="Brinquedo Favorito"
-                placeholder="Brinquedo favorito"
+                placeholder="O que ele mais gosta?"
                 value={values.brinquedo}
                 onChangeText={handleChange('brinquedo')}
                 onBlur={handleBlur('brinquedo')}
                 error={touched.brinquedo && errors.brinquedo}
               />
 
+              {/* Botão de Envio */}
               <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                <Text style={styles.buttonText}>Cadastrar Pet</Text>
+                <Text style={styles.buttonText}>CADASTRAR PET</Text>
               </TouchableOpacity>
 
-              <View style={{ marginTop: 20 }}>
-                <Button
-                  title="Voltar"
-                  onPress={() => navigation.navigate('SignIn')}
-                />
-              </View>
-
-              <View style={{ height: 800, backgroundColor: 'red' }}></View>
-
+              {/* Botão Voltar */}
+              <TouchableOpacity 
+                style={styles.btnVoltar} 
+                onPress={() => navigation.navigate('SignIn')}
+              >
+                <Text style={styles.btnVoltarText}>Já tenho conta. Voltar</Text>
+              </TouchableOpacity>
             </View>
-
           </ScrollView>
         )}
       </Formik>
@@ -131,30 +132,54 @@ export default function CadastroScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
     backgroundColor: '#fff',
-    minHeight: '100vh', // 🔥 ESSENCIAL pro web
-  },
-  scroll: {
-    flex: 1,
+    // Garante altura total no navegador
+    height: Platform.OS === 'web' ? '100vh' : 'auto',
   },
   scrollContent: {
-    padding: 20,
-    flexGrow: 1, // 🔥 faz o scroll funcionar no web
+    paddingBottom: 60, // Espaço extra para o botão não ficar cortado
+    flexGrow: 1,
   },
   card: {
-    flexGrow: 1, // 🔥 garante que o conteúdo cresce
+    padding: 25,
+    maxWidth: 500,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   button: {
     backgroundColor: '#2196F3',
-    padding: 15,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20
+    marginTop: 25,
+    // Sombra para visual moderno
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold'
-  }
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  btnVoltar: {
+    marginTop: 20,
+    padding: 10,
+    alignItems: 'center',
+  },
+  btnVoltarText: {
+    color: '#666',
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
 });

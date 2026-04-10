@@ -1,63 +1,107 @@
-import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { Formik } from 'formik';
+import * as Yup from 'yup';
+
+// 1. Definição do esquema de validação
+const loginSchema = Yup.object().shape({
+  email: Yup.string()
+    .email('E-mail inválido')
+    .required('O e-mail é obrigatório'),
+  senha: Yup.string()
+    .min(6, 'A senha deve ter pelo menos 6 caracteres')
+    .required('A senha é obrigatória'),
+});
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-
   return (
-    <View style={styles.mainContainer}> 
-      
-      <Text style={styles.title}>Bem-vindo!</Text>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite seu email"
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Senha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite sua senha"
-          value={senha}
-          onChangeText={setSenha}
-          secureTextEntry={true} // Isso faz os caracteres virarem bolinhas
-        />
-      </View>
-
-      <TouchableOpacity 
-        style={styles.buttonEntrar} 
-        onPress={() => navigation.navigate('Main')}
+    <View style={styles.mainContainer}>
+      <Formik
+        initialValues={{ email: '', senha: '' }}
+        validationSchema={loginSchema}
+        onSubmit={(values) => {
+          // Só entra aqui se os campos estiverem preenchidos corretamente
+          console.log('Dados de login:', values);
+          navigation.navigate('Main');
+        }}
       >
-        <Text style={styles.buttonText}>ENTRAR</Text>
-      </TouchableOpacity>
+        {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+          <View style={styles.innerContainer}>
+            <Text style={styles.title}>Bem-vindo!</Text>
 
-      <TouchableOpacity 
-        style={styles.buttonCriar} 
-        onPress={() => navigation.navigate('SignUp')}
-      >
-        <Text style={styles.buttonText}>CRIAR CONTA</Text>
-      </TouchableOpacity>
-      
+            {/* Campo de Email */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  touched.email && errors.email ? styles.inputError : null
+                ]}
+                placeholder="Digite seu email"
+                value={values.email}
+                onChangeText={handleChange('email')}
+                onBlur={handleBlur('email')}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              {touched.email && errors.email && (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              )}
+            </View>
+
+            {/* Campo de Senha */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Senha</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  touched.senha && errors.senha ? styles.inputError : null
+                ]}
+                placeholder="Digite sua senha"
+                value={values.senha}
+                onChangeText={handleChange('senha')}
+                onBlur={handleBlur('senha')}
+                secureTextEntry={true}
+              />
+              {touched.senha && errors.senha && (
+                <Text style={styles.errorText}>{errors.senha}</Text>
+              )}
+            </View>
+
+            {/* Botão Entrar chama o handleSubmit do Formik */}
+            <TouchableOpacity 
+              style={styles.buttonEntrar} 
+              onPress={handleSubmit}
+            >
+              <Text style={styles.buttonText}>ENTRAR</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.buttonCriar} 
+              onPress={() => navigation.navigate('SignUp')}
+            >
+              <Text style={styles.buttonText}>CRIAR CONTA</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </Formik>
     </View>
   );
 }
 
-// 3. Definição dos estilos (Onde o mainContainer vive)
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 30,
     justifyContent: 'center',
+    // Ajuste para web ocupar a tela toda
+    height: Platform.OS === 'web' ? '100vh' : '100%',
+  },
+  innerContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 28,
@@ -67,7 +111,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 15,
   },
   label: {
     fontSize: 14,
@@ -84,16 +128,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f9f9f9',
   },
+  inputError: {
+    borderColor: '#FF3B30', // Borda vermelha se houver erro
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
+  },
   buttonEntrar: {
-    backgroundColor: '#3B82F6', // Azul moderno
+    backgroundColor: '#3B82F6',
     height: 55,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
   },
   buttonCriar: {
-    backgroundColor: '#10B981', // Verde moderno
+    backgroundColor: '#10B981',
     height: 55,
     borderRadius: 12,
     justifyContent: 'center',
@@ -106,71 +159,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-
-/*import React, { useState } from 'react';
-import { View, TextInput, Button } from 'react-native';
-
-export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'stretch', padding: 20, backgroundColor: '#fff' }}>
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <Button
-        title="Entrar"
-        onPress={() => navigation.navigate('Main')}
-      />
-
-      <Button
-        title="Criar conta"
-        onPress={() => navigation.navigate('SignUp')}
-      />
-    </View>
-  );
-
-  
-}
-  
-
-
-
-import React, { useState } from 'react';
-import { View, TextInput, Button, Text } from 'react-native';
-
-export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-
-  return (
-    // O flex: 1 e o backgroundColor são vitais para o teste
-    <View style={{ flex: 1, backgroundColor: 'yellow', justifyContent: 'center', padding: 20 }}>
-      <Text style={{ fontSize: 20, marginBottom: 20, textAlign: 'center' }}>
-        Teste de Tela: Login
-      </Text>
-      
-      <TextInput
-        placeholder="Email"
-        style={{ height: 50, borderWidth: 2, borderColor: 'black', marginBottom: 10, padding: 10, backgroundColor: 'white' }}
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <Button
-        title="Entrar (Ir para Home)"
-        onPress={() => navigation.navigate('Main')}
-      />
-
-      <View style={{ marginTop: 10 }}>
-        <Button
-          title="Criar conta"
-          color="green"
-          onPress={() => navigation.navigate('SignUp')}
-        />
-      </View>
-    </View>
-  );
-} */

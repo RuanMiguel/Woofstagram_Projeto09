@@ -1,87 +1,79 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Platform, Alert } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 1. Definição do esquema de validação
 const loginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email('E-mail inválido')
-    .required('O e-mail é obrigatório'),
-  senha: Yup.string()
-    .min(6, 'A senha deve ter pelo menos 6 caracteres')
-    .required('A senha é obrigatória'),
+  email: Yup.string().email('E-mail inválido').required('Obrigatório'),
+  senha: Yup.string().min(6, 'Mínimo 6 caracteres').required('Obrigatório'),
 });
 
 export default function LoginScreen({ navigation }) {
   return (
-    <View style={styles.mainContainer}>
+    <View style={styles.container}>
       <Formik
         initialValues={{ email: '', senha: '' }}
         validationSchema={loginSchema}
-        onSubmit={(values) => {
-          // Só entra aqui se os campos estiverem preenchidos corretamente
-          console.log('Dados de login:', values);
-          navigation.navigate('Main');
+        onSubmit={async (values) => {
+          try {
+            const user = await AsyncStorage.getItem('user');
+
+            if (!user) {
+              Alert.alert('Erro', 'Nenhum usuário cadastrado');
+              return;
+            }
+
+            const userData = JSON.parse(user);
+
+            if (
+              values.email === userData.email &&
+              values.senha === userData.senha
+            ) {
+              navigation.navigate('Main');
+            } else {
+              Alert.alert('Erro', 'Email ou senha inválido');
+            }
+
+          } catch (error) {
+            console.log('Erro no login:', error);
+          }
         }}
       >
-        {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
-          <View style={styles.innerContainer}>
-            <Text style={styles.title}>Bem-vindo!</Text>
+        {({ handleChange, handleSubmit, values, errors, touched }) => (
+          <View style={styles.card}>
 
-            {/* Campo de Email */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  touched.email && errors.email ? styles.inputError : null
-                ]}
-                placeholder="Digite seu email"
-                value={values.email}
-                onChangeText={handleChange('email')}
-                onBlur={handleBlur('email')}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              {touched.email && errors.email && (
-                <Text style={styles.errorText}>{errors.email}</Text>
-              )}
-            </View>
+            <Text style={styles.title}>Login</Text>
 
-            {/* Campo de Senha */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Senha</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  touched.senha && errors.senha ? styles.inputError : null
-                ]}
-                placeholder="Digite sua senha"
-                value={values.senha}
-                onChangeText={handleChange('senha')}
-                onBlur={handleBlur('senha')}
-                secureTextEntry={true}
-              />
-              {touched.senha && errors.senha && (
-                <Text style={styles.errorText}>{errors.senha}</Text>
-              )}
-            </View>
+            <TextInput
+              style={[styles.input, touched.email && errors.email && styles.inputError]}
+              placeholder="Email"
+              value={values.email}
+              onChangeText={handleChange('email')}
+            />
+            {touched.email && errors.email && (
+              <Text style={styles.error}>{errors.email}</Text>
+            )}
 
-            {/* Botão Entrar chama o handleSubmit do Formik */}
-            <TouchableOpacity 
-              style={styles.buttonEntrar} 
-              onPress={handleSubmit}
-            >
+            <TextInput
+              style={[styles.input, touched.senha && errors.senha && styles.inputError]}
+              placeholder="Senha"
+              secureTextEntry
+              value={values.senha}
+              onChangeText={handleChange('senha')}
+            />
+            {touched.senha && errors.senha && (
+              <Text style={styles.error}>{errors.senha}</Text>
+            )}
+
+            <TouchableOpacity style={styles.button} onPress={handleSubmit}>
               <Text style={styles.buttonText}>ENTRAR</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.buttonCriar} 
-              onPress={() => navigation.navigate('SignUp')}
-            >
-              <Text style={styles.buttonText}>CRIAR CONTA</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+              <Text style={styles.link}>Criar conta</Text>
             </TouchableOpacity>
+
           </View>
         )}
       </Formik>
@@ -90,72 +82,48 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
+  container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 30,
     justifyContent: 'center',
-    // Ajuste para web ocupar a tela toda
+    padding: 30,
+    backgroundColor: '#fff',
     height: Platform.OS === 'web' ? '100vh' : '100%',
   },
-  innerContainer: {
-    width: '100%',
+  card: {
     maxWidth: 400,
     alignSelf: 'center',
+    width: '100%',
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 40,
     textAlign: 'center',
-  },
-  inputGroup: {
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
-    fontWeight: '600',
+    marginBottom: 20,
   },
   input: {
-    height: 55,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 10,
   },
   inputError: {
-    borderColor: '#FF3B30', // Borda vermelha se houver erro
+    borderColor: 'red',
   },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginTop: 5,
-    marginLeft: 5,
+  error: {
+    color: 'red',
+    marginBottom: 10,
   },
-  buttonEntrar: {
+  button: {
     backgroundColor: '#3B82F6',
-    height: 55,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonCriar: {
-    backgroundColor: '#10B981',
-    height: 55,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 15,
+    padding: 15,
+    borderRadius: 10,
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    textAlign: 'center',
+  },
+  link: {
+    textAlign: 'center',
+    marginTop: 15,
   },
 });

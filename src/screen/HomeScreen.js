@@ -1,52 +1,63 @@
-import React from 'react';
-import { ScrollView, View, Button } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, Button } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import Heading from '../components/Heading';
 import WoofCard from '../components/WoofCard';
 import WoofPost from '../components/WoofPost';
 
-const dados = {
-  woofs: [
-    { nome: 'Rex', avatar: 'https://images.unsplash.com/photo-1517849845537-4d257902454a' },
-    { nome: 'Luna', avatar: 'https://images.unsplash.com/photo-1507149833265-60c372daea22' },
-  ],
-  posts: [
-    {
-      title: 'Passeio no parque',
-      description: 'Hoje foi um dia incrível!',
-      image: 'https://images.unsplash.com/photo-1507149833265-60c372daea22',
-    },
-    {
-      title: 'Hora da soneca',
-      description: 'Depois de brincar muito 😴',
-      image: 'https://images.unsplash.com/photo-1517849845537-4d257902454a',
-    },
-  ],
-};
+export default function HomeScreen({ navigation }) {
 
-export default function HomeScreen({ sair }) {
+  const [pet, setPet] = useState(null);
+
+  useEffect(() => {
+    const carregar = async () => {
+      const user = await AsyncStorage.getItem('user');
+      if (user) setPet(JSON.parse(user));
+    };
+    carregar();
+  }, []);
+
+
+  const sair = async () => {
+    await AsyncStorage.removeItem('user');
+
+    navigation.getParent()?.getParent()?.reset({
+      index: 0,
+      routes: [{ name: 'SignIn' }],
+    });
+  };
+
   return (
     <ScrollView style={{ padding: 15 }}>
-      
-      <Heading>Trending Woofs</Heading>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {dados.woofs.map((item, index) => (
-          <WoofCard key={index} name={item.nome} avatar={item.avatar} />
-        ))}
-      </ScrollView>
+      <Heading>Meu Pet</Heading>
+
+      {pet && (
+        <WoofCard
+          name={pet.nomePet}
+          avatar="https://images.unsplash.com/photo-1517849845537-4d257902454a"
+        />
+      )}
 
       <Heading>New Woof Posts</Heading>
 
-      {dados.posts.map((post, index) => (
-        <WoofPost
-          key={index}
-          title={post.title}
-          description={post.description}
-          image={post.image}
-        />
-      ))}
+      <WoofPost
+        title="Passeio no parque"
+        description="Hoje foi um dia incrível!"
+        image="https://images.unsplash.com/photo-1507149833265-60c372daea22"
+      />
 
-      <Button title="Sair" onPress={() => navigation.navigate('SignIn')} />
+      <WoofPost
+        title="Hora da soneca"
+        description="Depois de brincar muito 😴"
+        image="https://images.unsplash.com/photo-1517849845537-4d257902454a"
+      />
+
+      <Button 
+        title="Sair" 
+        onPress={() => navigation.navigate('SignIn')}
+      />
 
     </ScrollView>
   );
